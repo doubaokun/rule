@@ -37,12 +37,19 @@ class GreetingFilter (dependencies: FilterDependencies) extends FilterBase(depen
 //    )
 //  )
 
-  val a = permitted >>> filter("aaaa") >> rand("aaaaaa", "bbbbbb") >> complement >> tweet
 
-//  timeline += (permitted >>>
-//    filter(and(or("帰宅", "きたく", "ただいま"), not("行きたく"))) >>
-//    rand("おかえり。{user}", "おかえりなさいー") >> complement >>
-//    tweet)
+  timeLine(
+    permitted >>> filter("aaaa") >> rand("aaaaaa", "bbbbbb") >> tweet
+  )
+
+
+
+  timeLine(
+    permitted >>>
+    filter(and(or("帰宅", "きたく", "ただいま"), not("行きたく"))) >>
+    rand("おかえり。{user}", "おかえりなさいー") >> complement >>
+    tweet
+  )
 
 
 }

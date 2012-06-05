@@ -9,6 +9,7 @@ resolvers ++= Seq("twitter4j.org Repository" at "http://twitter4j.org/maven2",
                   "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository")
 
 libraryDependencies ++= Seq("commons-logging" % "commons-logging" % "1.1.1",
+                            "commons-lang" % "commons-lang" % "2.6",
                            "commons-configuration" % "commons-configuration" % "1.8",
                            "org.slf4j" % "slf4j-api" % "1.6.4",
                            "mysql" % "mysql-connector-java" % "5.1.18",

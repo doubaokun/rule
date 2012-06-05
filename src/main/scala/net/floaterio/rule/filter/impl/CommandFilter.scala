@@ -17,7 +17,7 @@ class CommandFilter (dependencies: FilterDependencies) extends FilterBase(depend
   import dependencies._
   import net.floaterio.rule.util.ReplySupport._
 
-  val a = owner >>> filter("%block {screenName}") >> {
+  val a = owner >>> filter("%block") >> {
     s => {
       // TODO get UserName from body
       val user = s.body//.get("screenName")

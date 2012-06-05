@@ -4,11 +4,13 @@ import twitter4j._
 import net.floaterio.rule.twitter._
 import java.util.concurrent.TimeUnit
 import model.{FollowContext, StatusContext}
-import net.floaterio.rule.database.dao.UserDao
 import net.floaterio.rule.util.{UserSupplier, ReplyCondition}
 import java.util.Date
 import scala.util.Random
 import net.floaterio.rule.database.model.{TweetStatus, User}
+import net.floaterio.rule.core.RuleConfiguration
+import org.apache.commons.lang.StringUtils
+import net.floaterio.rule.database.dao.{UserStatusDao, UserDao}
 
 /**
  * Created by IntelliJ IDEA.
@@ -31,83 +33,28 @@ class FilterBase (dependencies: FilterDependencies) extends Filter {
   def pause = eventReceiver.pause
   def isResume = eventReceiver.status
 
-//  def timeLine(filter: StatusContext => Unit) {
-//    onTimeLineListeners += {
-//      t => {
-//        filter(StatusContext(t.status,Nil,config))
-//      }
-//    }
-//  }
-
-  var timeline = List[StatusContext => Option[_]]()
-
-//  def mention(filter: StatusContext => Unit) {
-//    onMentionListeners += {
-//      t => {
-//        filter(StatusContext(t.status,
-//          tweetCache.getConversationList(t.status),config))
-//      }
-//    }
-//  }
-
-  var mention = List[StatusContext => Option[_]]()
-  onMentionListeners += { t =>
-    val context = StatusContext(t.status, tweetCache.getConversationList(t.status), config)
-    mention.find { m =>
-      m.apply(context).isDefined
-    }
+  def timeLine(filter: StatusContext => Option[_]) {
+    onTimeLineListeners += (t => {
+        filter(StatusContext(t.status))
+      })
   }
 
-  @deprecated
-  def onlyArrowedUser(filter: StatusContext => Unit): (StatusContext => Unit) = {
-    context: StatusContext => {
-      // 他の人のリプライは拾わない
-      if (!context.status.getText.contains("@")) {
-        filter.apply(context)
-      }
-    }
+  def mention(filter: StatusContext => Option[_]) {
+    onMentionListeners += (t => {
+        filter(StatusContext(t.status))
+      })
   }
 
-  val permitted : StatusContext => Option[StatusContext] = {
-    context => {
-      if (!context.status.getText.contains("@")) {
-        Some(context)
-      } else {
-        None
-      }
-    }
-  }
-
-  @deprecated
-  def onlyAppOwner(filter: StatusContext => Unit): (StatusContext => Unit) = {
-    context : StatusContext => {
-      if(context.isOwnerTweet){
-        filter.apply(context)
-      }
-    }
-  }
-
-  val owner: StatusContext => Option[StatusContext] = {
-    context : StatusContext => {
-      // TODO remove config from context
-      if(context.isOwnerTweet){
-        Some(context)
-      } else {
-        None
-      }
-    }
-  }
-
-  def interval(name: String, span: Int, timeUnit: TimeUnit)(filter: => Unit) {
+  def interval(name: String, span: Int, timeUnit: TimeUnit)(filter:StatusContext => Option[_]) {
     scheduleReceiverMap += (name -> (() => {
-      filter
+      filter.apply(new NullStatusContext())
     }))
     jobScheduler.addIntervalJob(name, filterName, eventReceiver, span, timeUnit)
   }
 
-  def atJustTime(name: String, cron: String)(filter: => Unit) {
+  def atJustTime(name: String, cron: String)(filter:StatusContext => Option[_]) {
     scheduleReceiverMap += (name -> (() => {
-      filter
+      filter.apply(new NullStatusContext())
     }))
     jobScheduler.addCronJob(name, filterName, eventReceiver, cron)
   }
@@ -124,41 +71,49 @@ class FilterBase (dependencies: FilterDependencies) extends Filter {
     }
   }
 
-//  def tweet(status: String) = {
-//    // updateTwitter.updateStatus(status)
-//    tweetQueue.tweet(status)
-//  }
-//
-//  def reply(status: String, screenName: String, inReplyToStatusId: Long) {
-////    val statusUpdate = new StatusUpdate(toReplyStatus(status, screenName))
-////    statusUpdate.setInReplyToStatusId(inReplyToStatusId)
-////    updateTwitter.updateStatus(statusUpdate)
-//    tweetQueue.reply(toReplyStatus(status, screenName), inReplyToStatusId)
-//  }
-//
-//  def reply(status: String, screenName: String) {
-////    updateTwitter.updateStatus(toReplyStatus(status, screenName))
-//    tweetQueue.tweet(toReplyStatus(status, screenName))
-//  }
-
   def onFollow(filter: FollowContext => Unit) {
-    onFollowListeners += (follow => {
-      filter.apply(FollowContext(follow.user, true))
-    })
+    onFollowListeners += (
+      follow => {
+        filter.apply(FollowContext(follow.user, true))
+      }
+    )
   }
 
   def onRemove(filter: FollowContext => Unit) {
-    onRemoveListeners += (follow => {
-      filter.apply(FollowContext(follow.user, false))
-    })
+    onRemoveListeners += (
+      follow => {
+        filter.apply(FollowContext(follow.user, false))
+      }
+    )
+  }
+
+  // Helper Method
+
+  val permitted : StatusContext => Option[StatusContext] = {
+    context => {
+      if (!context.status.getText.contains("@")) {
+        Some(context)
+      } else {
+        None
+      }
+    }
+  }
+
+  val owner: StatusContext => Option[StatusContext] = {
+    context : StatusContext => {
+      if(context.isOwnerTweet){
+        Some(context)
+      } else {
+        None
+      }
+    }
   }
 
   def safeWithTwitter(f: => Unit) = {
     try {
       f
     } catch {
-      // TODO logger
-      case e:TwitterException => e.printStackTrace()
+      case e:TwitterException => log.error("twitter error", e)
     }
   }
 
@@ -181,18 +136,16 @@ class FilterBase (dependencies: FilterDependencies) extends Filter {
     }
   }
 
-//  def convert(converter: ReplyConverter): StatusContext => StatusContext = {
-//    s => {
-//      converter.apply(s)
-//    }
-//  }
-
+  /**
+   * {user} を置き換え
+   * @return
+   */
   def complement: StatusContext => StatusContext = {
     c => {
       val sts = c.updateStatus
       c.updateStatus = try {
         val userName = userDao.getUser(c.userId).map(_.nickname).getOrElse(c.userName)
-        sts.format(userName)
+        StringUtils.replace(sts, "{user}", userName)
       } catch {
         case e:Exception => sts
       }
@@ -255,15 +208,20 @@ class FilterBase (dependencies: FilterDependencies) extends Filter {
 
   implicit def strToFuncWithWeight(text: String): FuncWithWeight = normal(strToFunc(text))
 
-  def likability(statusContext: StatusContext) = {
-    userStatusDao.findByUserId(statusContext.userId).map(_.likability).getOrElse(0)
-  }
-
   implicit def daoToUserSupplier(dao: UserDao): UserSupplier = {
     new UserSupplier {
       def getUser(userId: Long): Option[User] = dao.findByPk(userId)
     }
   }
+
+  implicit def decorateContextWithConfig(c: StatusContext): ContextDecoratorWithConfig
+    = ContextDecoratorWithConfig(c, config)
+
+  implicit def decorateContextWithConversationList(c: StatusContext): ContextDecoratorWithConversationList
+    = ContextDecoratorWithConversationList(c, config, tweetCache)
+
+  implicit def decorateContextWithUserStatus(c: StatusContext): ContextDecoratorWithUserStatus
+    = ContextDecoratorWithUserStatus(c, userStatusDao)
 
 }
 
@@ -295,6 +253,23 @@ case class FuncWithWeight(f: StatusContext => StatusContext, weight: Double) {
     } , weight)
   }
 }
+
+case class ContextDecoratorWithConfig(c: StatusContext, config: RuleConfiguration) {
+  def isOwnerTweet = c.screenName == config.ownerScreenName
+  def isRuleTweet = c.screenName == config.botScreenName
+}
+
+case class ContextDecoratorWithConversationList(c: StatusContext, config: RuleConfiguration, cache: TweetCache) {
+  lazy val conversationList = cache.getConversationList(c.status)
+  def triggerUser = conversationList.head.getUser
+  def isRuleTrigger = triggerUser.getScreenName == config.botScreenName
+}
+
+case class ContextDecoratorWithUserStatus(c: StatusContext, userStatusDao: UserStatusDao) {
+  def likability = userStatusDao.findByUserId(c.userId).map(_.likability).getOrElse(0)
+}
+
+class NullStatusContext extends StatusContext(null)
 
 
 
