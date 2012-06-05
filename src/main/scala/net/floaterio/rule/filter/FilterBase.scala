@@ -39,10 +39,13 @@ class FilterBase (dependencies: FilterDependencies) extends Filter {
       })
   }
 
-  def mention(filter: StatusContext => Option[_]) {
-    onMentionListeners += (t => {
+  def mention(filters: (StatusContext => Option[_])*) {
+    filters.foreach {filter =>
+      onMentionListeners += (t => {
         filter(StatusContext(t.status))
       })
+    }
+
   }
 
   def interval(name: String, span: Int, timeUnit: TimeUnit)(filter:StatusContext => Option[_]) {

@@ -12,19 +12,27 @@ import net.floaterio.rule.filter.{FilterDependencies, FilterBase}
  * To change this template use File | Settings | File Templates.
  */
 
-class CommandFilter (dependencies: FilterDependencies) extends FilterBase(dependencies) {
+class CommandFilter(dependencies: FilterDependencies) extends FilterBase(dependencies) {
 
   import dependencies._
   import net.floaterio.rule.util.ReplySupport._
 
-  val a = owner >>> filter("%block") >> {
-    s => {
-      // TODO get UserName from body
-      val user = s.body//.get("screenName")
-      // TODO Queue
-      twitter.createBlock(user)
+  mention(
+    owner >>> filter("%block") >> {
+      s => {
+        // TODO get UserName from body
+        val user = s.body //.get("screenName")
+        // TODO Queue
+        updateTwitter.createBlock(user)
+      }
+    },
+    owner >>> filter("%follow") >> {
+      c => {
+        val user = c.body
+        updateTwitter.createFriendship(user)
+      }
     }
-  }
+  )
 
 }
 
