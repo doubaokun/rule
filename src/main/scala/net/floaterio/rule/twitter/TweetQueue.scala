@@ -2,7 +2,9 @@ package net.floaterio.rule.twitter
 
 import java.util.concurrent._
 import java.util.Date
-import twitter4j.{StatusUpdate, Twitter}
+import net.floaterio.rule.database.dao.TweetStatusDao
+import twitter4j.{Status, TwitterException, StatusUpdate, Twitter}
+import net.floaterio.rule.database.model.{StatusType, TweetType, TweetStatus}
 
 
 /**
@@ -15,19 +17,17 @@ import twitter4j.{StatusUpdate, Twitter}
 
 trait TweetQueue {
 
-  def tweet(status: String): Unit
-  def tweet(status: String, delay: Int): Unit
-  def reply(status: String, inReplyToStatusId: Long): Unit
-  def reply(status: String, inReplyToStatusId: Long, delay: Int): Unit
+  def tweet(status: String): TweetStatus
+  def tweet(status: String, delay: Int): TweetStatus
+  def reply(status: String, inReplyToStatusId: Long, inReplyToUserId: Long): TweetStatus
+  def reply(status: String, inReplyToStatusId: Long, inReplyToUserId: Long, delay: Int): TweetStatus
 
 }
 
 case class TweetResult(result: Boolean)
 
-sealed trait TweetCommand extends Delayed {
-  def status: String
-  val delay: Int
-  val target = new Date().getTime + delay * 1000
+case class TweetCommand(tweetStatus: TweetStatus) extends Delayed {
+  val target = new Date().getTime + tweetStatus.delay * 1000
   def getDelay(p1: TimeUnit) = {
     val diff = target - new Date().getTime
     p1.convert(diff, TimeUnit.MILLISECONDS)
@@ -40,48 +40,52 @@ sealed trait TweetCommand extends Delayed {
   }
 }
 
-case class TweetCmd(status: String, delay: Int) extends TweetCommand
-case class ReplyCmd(status: String, inReplyToStatusId: Long, delay: Int) extends TweetCommand
-
-
-class TweetQueueImpl(twitter: Twitter) {
+class TweetQueueImpl(twitter: Twitter, tweetStatusDao: TweetStatusDao) extends TweetQueue {
 
   val queue = new DelayQueue[TweetCommand]()
   val executor = Executors.newSingleThreadExecutor()
   var future: Future[_] = null
 
-  def tweet(status: String):Unit = {
+  def tweet(status: String):TweetStatus = {
     tweet(status, 0)
   }
-  def tweet(status: String, delay: Int):Unit = {
-    queue.add(TweetCmd(status, delay))
+
+  def tweet(status: String, delay: Int):TweetStatus = {
+    val ts = TweetStatus.createTweet(status, delay)
+    val saved = tweetStatusDao.create(ts)
+    queue.add(TweetCommand(saved))
+    saved
   }
-  def reply(status: String, inReplyToStatusId: Long):Unit = {
-    reply(status, inReplyToStatusId, 0)
+
+  def reply(status: String, inReplyToStatusId: Long, inReplyToUserId: Long):TweetStatus = {
+    reply(status, inReplyToStatusId, inReplyToUserId, 0)
   }
-  def reply(status: String, inReplyToStatusId: Long, delay: Int):Unit = {
-    queue.add(ReplyCmd(status, inReplyToStatusId, delay))
+
+  def reply(status: String, inReplyToStatusId: Long, inReplyToUserId: Long, delay: Int):TweetStatus = {
+    val ts = TweetStatus.createReply(status, inReplyToStatusId, inReplyToUserId, delay)
+    val saved = tweetStatusDao.create(ts)
+    queue.add(TweetCommand(saved))
+    saved
   }
 
   def startConsumer = {
     future = executor.submit(new Runnable {
       def run() {
         while(true) {
-          queue.take() match {
-            case t:TweetCmd => {
-              doIgnoreException {
+          val t = queue.take().tweetStatus
+          doInTwitter(t) {
+            TweetType(t.tweetType) match {
+              case TweetType.TWEET => {
                 twitter.updateStatus(t.status)
               }
-            }
-            case r:ReplyCmd => {
-              doIgnoreException {
-                val s = new StatusUpdate(r.status)
-                s.setInReplyToStatusId(r.inReplyToStatusId)
+              case TweetType.REPLY  => {
+                val s = new StatusUpdate(t.status)
+                s.setInReplyToStatusId(t.targetStatusId)
                 twitter.updateStatus(s)
               }
-            }
-            case _ => {
-              println("not implemented")
+//              case _ => {
+//                println("not implemented")
+//              }
             }
           }
         }
@@ -95,12 +99,18 @@ class TweetQueueImpl(twitter: Twitter) {
     }
   }
 
-  def doIgnoreException(f: => Unit)= {
+  def doInTwitter(tweetStatus: TweetStatus)(f: => Status) = {
     try {
-      f
-      true
+      val result = f
+      tweetStatus.createdInTwitter = result.getCreatedAt
+      tweetStatus.idInTwitter = result.getId
+      tweetStatus.statusType = StatusType.UPDATED.id
     } catch {
-      case e: Exception => false
+      case e: TwitterException => {
+        tweetStatus.statusType = StatusType.ERROR.id
+        tweetStatus.errorReason = e.getExceptionCode()
+        false
+      }
     }
   }
 

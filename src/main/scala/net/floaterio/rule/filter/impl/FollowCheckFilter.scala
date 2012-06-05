@@ -27,7 +27,6 @@ class FollowCheckFilter (dependencies: FilterDependencies) extends FilterBase(de
     safeWithTwitter {
       updateTwitter.createFriendship(context.user.getId)
     }
-
   })
 
   onRemove(context => {

@@ -19,34 +19,30 @@ class GreetingFilter (dependencies: FilterDependencies) extends FilterBase(depen
   import ReplySupport._
   import dependencies._
 
-  val combiners = List(or("おはよう", r("(お|起)き(た|る)")).convert(
-    random(
-      formatByName("おはよう。%s"),
-      fixed("寝ぐせが可愛い。3ptアップ", 0.1) doBefore (c => {
-        println(c.userName)
-      })
-    )
-  ),
-    or("帰宅", "きたく", "ただいま").convert(
-      random(
-        formatByName("%s おかえりー"),
-        formatByName("おかえり。%s"),
-        time("おかえり。オーヘルして遊ぼ？", 1, 17, 20),
-        time("おかえり。遅くまでお疲れさま", 1, 22, 4)
-      )
-    )
-  )
+//  val combiners = List(or("おはよう", r("(お|起)き(た|る)")).convert(
+//    random(
+//      formatByName("おはよう。%s"),
+//      fixed("寝ぐせが可愛い。3ptアップ", 0.1) doBefore (c => {
+//        println(c.userName)
+//      })
+//    )
+//  ),
+//    or("帰宅", "きたく", "ただいま").convert(
+//      random(
+//        formatByName("%s おかえりー"),
+//        formatByName("おかえり。%s"),
+//        time("おかえり。オーヘルして遊ぼ？", 1, 17, 20),
+//        time("おかえり。遅くまでお疲れさま", 1, 22, 4)
+//      )
+//    )
+//  )
 
-  timeLine(onlyArrowedUser(context => {
-    log.info("timeline:" + context.body)
-    combiners.find(c => {
-      val result = c.condition(context)
-      if (result) {
-        val text = c.converter(context)
-        tweet(text)
-      }
-      result
-    })
-  }
-  ))
+  val a = permitted >>> filter("aaaa") >> rand("aaaaaa", "bbbbbb") >> complement >> tweet
+
+//  timeline += (permitted >>>
+//    filter(and(or("帰宅", "きたく", "ただいま"), not("行きたく"))) >>
+//    rand("おかえり。{user}", "おかえりなさいー") >> complement >>
+//    tweet)
+
+
 }

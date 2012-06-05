@@ -29,8 +29,8 @@ class FilterManagerImpl(configuration: RuleConfiguration,miscFactory: MiscFactor
   import daoFactory._
 
   lazy val dependencies = new FilterDependencies(
-    twitter,updateTwitter,tweetCache,
-    jobScheduler,userDao,userStatusDao,configuration
+    twitter,updateTwitter,tweetQueue,tweetCache,
+    jobScheduler,userDao,userStatusDao,tweetStatusDao, configuration
   )
 
   // TODO start

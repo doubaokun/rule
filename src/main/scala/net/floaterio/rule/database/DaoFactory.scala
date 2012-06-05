@@ -1,6 +1,7 @@
 package net.floaterio.rule.database
 
-import dao.{UserStatusDao, UserDao, UserStatusDaoImpl, UserDaoImpl}
+import dao._
+
 
 /**
  * Created with IntelliJ IDEA.
@@ -14,6 +15,7 @@ trait DaoFactory {
 
   def userDao : UserDao
   def userStatusDao : UserStatusDao
+  def tweetStatusDao : TweetStatusDao
 
 }
 
@@ -23,5 +25,6 @@ class DaoFactoryImpl extends DaoFactory {
 
   lazy val userDao = new UserDaoImpl(dBInitializer.userTable)
   lazy val userStatusDao = new UserStatusDaoImpl(dBInitializer.userStatusTable)
+  lazy val tweetStatusDao = new TweetStatusDaoImpl(dBInitializer.tweetStatusTable)
 
 }

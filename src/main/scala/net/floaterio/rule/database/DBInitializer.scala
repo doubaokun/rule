@@ -30,13 +30,19 @@ class DBInitializer extends Schema {
     logger.info("session created")
   }
 
-  val userTable = table[User]("tuser")
+  val userTable = table[User]("user")
   on(userTable)(u =>
     declare(u.id is (primaryKey)))
 
   val userStatusTable = table[UserStatus]("userStatus")
   on(userStatusTable)(u => {
     declare(u.id is (primaryKey))
+  })
+
+  val tweetStatusTable = table[TweetStatus]("tweetStatus")
+  on(tweetStatusTable)(t => {
+    // TODO Index by targetUser and created
+    declare(t.id is (primaryKey))
   })
 
 }

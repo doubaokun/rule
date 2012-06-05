@@ -17,11 +17,13 @@ class BridgeFactory {
   // TODO use twitter configuration
   lazy val configuration = new RuleConfiguration
 
+  // TODO Configuration
+  lazy val daoFactory = new DaoFactoryImpl()
+
   lazy val miscFactory = new MiscFactoryImpl()
   // TODO Configuration
-  lazy val twitterComponentFactory = new TwitterComponentFactoryImpl(configuration, miscFactory.jobScheduler)
-
-  lazy val daoFactory = new DaoFactoryImpl()
+  lazy val twitterComponentFactory = new TwitterComponentFactoryImpl(
+    configuration, miscFactory.jobScheduler, daoFactory.tweetStatusDao)
 
   lazy val filterManager = new FilterManagerImpl(configuration, miscFactory, twitterComponentFactory, daoFactory)
 

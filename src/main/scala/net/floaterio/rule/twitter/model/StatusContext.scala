@@ -2,6 +2,7 @@ package net.floaterio.rule.twitter.model
 
 import twitter4j.Status
 import net.floaterio.rule.core.RuleConfiguration
+import collection.mutable.ListBuffer
 
 /**
  * Created with IntelliJ IDEA.
@@ -11,7 +12,10 @@ import net.floaterio.rule.core.RuleConfiguration
  * To change this template use File | Settings | File Templates.
  */
 
-case class StatusContext(val status: Status, val conversationList: List[Status], config: RuleConfiguration) {
+// TODO delete config and conversationList
+case class StatusContext(val status: Status, val conversationList: List[Status], config: RuleConfiguration,
+                         var updateStatus: String = "") {
+  val afterAction = ListBuffer[StatusContext => Unit]()
   def statusId = status.getId
   // TODO Mentionを除く
   def body = status.getText

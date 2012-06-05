@@ -18,7 +18,7 @@ class TweetCache(twitter: Twitter) {
   // TODO 共通化
   val cache = new HeapCache[Long, Status]
   val userCache = new HeapCache[Long, User]
-  
+
   def addStatus(status: Status) {
     cache.put(status.getId, status)
     userCache.put(status.getUser.getId, status.getUser)

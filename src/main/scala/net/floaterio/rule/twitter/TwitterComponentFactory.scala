@@ -4,6 +4,7 @@ import javasource.MockTwitter
 import twitter4j.{TwitterStreamFactory, TwitterFactory, TwitterStream, Twitter}
 import net.floaterio.rule.core.RuleConfiguration
 import net.floaterio.rule.util.schedule.JobScheduler
+import net.floaterio.rule.database.dao.TweetStatusDao
 
 
 /**
@@ -21,10 +22,13 @@ trait TwitterComponentFactory {
   def twitterStream : TwitterStream
   def tweetCache : TweetCache
   def tweetCollector : TweetCollector
+  def tweetQueue: TweetQueue
 
 }
 
-class TwitterComponentFactoryImpl(config: RuleConfiguration, scheduler: JobScheduler)
+class TwitterComponentFactoryImpl(config: RuleConfiguration,
+                                  scheduler: JobScheduler,
+                                  tweetStatusDao: TweetStatusDao)
   extends TwitterComponentFactory {
 
   lazy val twitter = TwitterFactory.getSingleton
@@ -35,6 +39,7 @@ class TwitterComponentFactoryImpl(config: RuleConfiguration, scheduler: JobSched
   lazy val tweetCollector = new TweetCollectorImpl(
     twitter, twitterStream, tweetCache, config, scheduler
   )
+  lazy val tweetQueue = new TweetQueueImpl(updateTwitter, tweetStatusDao)
 
 }
 

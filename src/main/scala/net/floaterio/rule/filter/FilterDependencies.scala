@@ -1,10 +1,10 @@
 package net.floaterio.rule.filter
 
 import twitter4j.Twitter
-import net.floaterio.rule.twitter.TweetCache
 import net.floaterio.rule.util.schedule.JobScheduler
-import net.floaterio.rule.database.dao.{UserStatusDao, UserDao}
 import net.floaterio.rule.core.RuleConfiguration
+import net.floaterio.rule.twitter.{TweetQueue, TweetCache}
+import net.floaterio.rule.database.dao.{TweetStatusDao, UserStatusDao, UserDao}
 
 /**
  * Created with IntelliJ IDEA.
@@ -15,11 +15,14 @@ import net.floaterio.rule.core.RuleConfiguration
  */
 
 class FilterDependencies(
+  // TODO remove
   val twitter: Twitter,
   val updateTwitter: Twitter,
+  val tweetQueue: TweetQueue,
   val tweetCache: TweetCache,
   val jobScheduler: JobScheduler,
   val userDao: UserDao,
   val userStatusDao: UserStatusDao,
+  val tweetStatusDao: TweetStatusDao,
   val config: RuleConfiguration ){
 }
