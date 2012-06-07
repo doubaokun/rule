@@ -17,8 +17,8 @@ class CommandFilter(dependencies: FilterDependencies) extends FilterBase(depende
   import dependencies._
   import net.floaterio.rule.util.ReplySupport._
 
-  mention(
-    owner >>> filter("%block") >> {
+  def f = List(
+    filter("%block") >> {
       s => {
         // TODO get UserName from body
         val user = s.body //.get("screenName")
@@ -26,13 +26,13 @@ class CommandFilter(dependencies: FilterDependencies) extends FilterBase(depende
         updateTwitter.createBlock(user)
       }
     },
-    owner >>> filter("%follow") >> {
+    filter("%follow") >> {
       c => {
         val user = c.body
         updateTwitter.createFriendship(user)
       }
     }
-  )
+  ).map(filter => owner >>> filter)
 
 }
 

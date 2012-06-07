@@ -65,6 +65,14 @@ class TweetCollectorImpl (twitter: Twitter,
           jobScheduler.addIntervalJob(jobName, jobGroup, commandActor, getTweetInterval, TimeUnit.SECONDS)
         }
         case Pause => {
+          twitterStream.addConnectionLifeCycleListener(new ConnectionLifeCycleListener {
+            def onConnect() {}
+
+            def onCleanUp() {}
+
+            def onDisconnect() {}
+          })
+
           twitterStream.shutdown()
           jobScheduler.pause(jobName, jobGroup)
         }
@@ -128,6 +136,8 @@ class TweetCollectorImpl (twitter: Twitter,
         paging.setCount(count)
       }
     }
+
+
 
     get(() => {
       twitter.getHomeTimeline(timelinePaging).toList

@@ -33,10 +33,12 @@ class FilterBase (dependencies: FilterDependencies) extends Filter {
   def pause = eventReceiver.pause
   def isResume = eventReceiver.status
 
-  def timeLine(filter: StatusContext => Option[_]) {
-    onTimeLineListeners += (t => {
+  def timeLine(filters: (StatusContext => Option[_])*) {
+    filters.foreach {filter =>
+      onTimeLineListeners += (t => {
         filter(StatusContext(t.status))
       })
+    }
   }
 
   def mention(filters: (StatusContext => Option[_])*) {
@@ -45,7 +47,6 @@ class FilterBase (dependencies: FilterDependencies) extends Filter {
         filter(StatusContext(t.status))
       })
     }
-
   }
 
   def interval(name: String, span: Int, timeUnit: TimeUnit)(filter:StatusContext => Option[_]) {

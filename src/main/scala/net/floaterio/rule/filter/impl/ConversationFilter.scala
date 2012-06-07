@@ -33,20 +33,14 @@ class ConversationFilter(dependencies: FilterDependencies) extends FilterBase(de
   //    ))
   //  )
 
-  mention(
+  def m = List(
     filter("message") >>> withFrequency >>
       rand(
         fix("Reply A", 3) withAction increment(3),
         fix("Reply C", 4) withAction increment(4)
-      ) >> reply
-  )
-
-  mention(
+      ),
     filter("message2") >>> withFrequency >>
-      rand("aaaa", "BBBBB") >> reply
-  )
-
-  mention(
+      rand("aaaa", "BBBBB"),
     filter("message3") >>> withFrequency >> {
       s => {
         s.updateStatus = s.likability match {
@@ -55,8 +49,8 @@ class ConversationFilter(dependencies: FilterDependencies) extends FilterBase(de
         }
         s
       }
-    } >> reply
-  )
+    }
+  ).map(_ >> reply)
 
 }
 
