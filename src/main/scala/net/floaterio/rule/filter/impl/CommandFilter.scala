@@ -1,7 +1,8 @@
 package net.floaterio.rule.filter.impl
 
 import net.floaterio.rule.twitter.model.StatusContext
-import net.floaterio.rule.filter.{FilterDependencies, FilterBase}
+import net.floaterio.rule.filter.{FilterDependencies, TimelineFilterBase}
+import net.floaterio.rule.twitter.TweetResult
 
 
 /**
@@ -12,24 +13,25 @@ import net.floaterio.rule.filter.{FilterDependencies, FilterBase}
  * To change this template use File | Settings | File Templates.
  */
 
-class CommandFilter(dependencies: FilterDependencies) extends FilterBase(dependencies) {
+class CommandFilter extends TimelineFilterBase {
 
-  import dependencies._
   import net.floaterio.rule.util.ReplySupport._
 
-  def f = List(
+  override def timeline = List(
     filter("%block") >> {
       s => {
         // TODO get UserName from body
         val user = s.body //.get("screenName")
         // TODO Queue
-        updateTwitter.createBlock(user)
+        twitter.createBlock(user)
+        TweetResult(true)
       }
     },
     filter("%follow") >> {
       c => {
         val user = c.body
-        updateTwitter.createFriendship(user)
+        twitter.createFriendship(user)
+        TweetResult(true)
       }
     }
   ).map(filter => owner >>> filter)

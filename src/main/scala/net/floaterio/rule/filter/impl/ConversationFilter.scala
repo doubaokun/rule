@@ -2,7 +2,7 @@ package net.floaterio.rule.filter.impl
 
 import org.apache.commons.logging.LogFactory
 import net.floaterio.rule.util._
-import net.floaterio.rule.filter.{FilterDependencies, FilterBase}
+import net.floaterio.rule.filter.{FilterDependencies, TimelineFilterBase}
 
 /**
  * Created by IntelliJ IDEA.
@@ -13,9 +13,7 @@ import net.floaterio.rule.filter.{FilterDependencies, FilterBase}
  */
 
 
-class ConversationFilter(dependencies: FilterDependencies) extends FilterBase(dependencies) {
-
-  val log = LogFactory.getLog(getClass)
+class ConversationFilter extends TimelineFilterBase {
 
   import ReplySupport._
 
@@ -33,7 +31,7 @@ class ConversationFilter(dependencies: FilterDependencies) extends FilterBase(de
   //    ))
   //  )
 
-  def m = List(
+  override def mention = List(
     filter("message") >>> withFrequency >>
       rand(
         fix("Reply A", 3) withAction increment(3),
@@ -50,7 +48,9 @@ class ConversationFilter(dependencies: FilterDependencies) extends FilterBase(de
         s
       }
     }
-  ).map(_ >> reply)
+  ).map(f => {
+    f >> reply
+  })
 
 }
 

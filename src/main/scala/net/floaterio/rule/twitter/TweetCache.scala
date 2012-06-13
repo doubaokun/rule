@@ -3,6 +3,7 @@ package net.floaterio.rule.twitter
 import twitter4j._
 import java.util.concurrent.ConcurrentHashMap
 import TwitterUtil._
+import net.floaterio.rule.core.DependencyFactory
 
 /**
  * Created by IntelliJ IDEA.
@@ -12,7 +13,9 @@ import TwitterUtil._
  * To change this template use File | Settings | File Templates.
  */
 
-class TweetCache(twitter: Twitter) {
+class TweetCache() {
+
+  val twitter: Twitter = DependencyFactory.twitter.vend
 
   // tweet
   // TODO 共通化

@@ -15,8 +15,6 @@ import org.apache.commons.logging.LogFactory
 
 trait RuleServer {
 
-  val bridgeFactory : BridgeFactory
-
   def startCollectTweet
 
 }
@@ -24,10 +22,7 @@ trait RuleServer {
 class RuleServerImpl extends RuleServer {
 
   val log = LogFactory.getLog(classOf[RuleServerImpl])
-
-  lazy val bridgeFactory = new BridgeFactory()
-  import bridgeFactory._
-  import twitterComponentFactory._
+  val tweetCollector = DependencyFactory.tweetCollector.vend
 
   {
     ScalaMessagePack.init()
@@ -39,9 +34,10 @@ class RuleServerImpl extends RuleServer {
 
   def startCollectTweet = {
 
-    filterManager.filterMap.foreach {f =>
-      tweetCollector += f._2.eventReceiver
-    }
+    // TODO
+//    filterManager.filterMap.foreach {f =>
+//      tweetCollector += f._2.eventReceiver
+//    }
     tweetCollector.start()
   }
 

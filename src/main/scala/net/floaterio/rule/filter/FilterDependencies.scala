@@ -15,14 +15,15 @@ import net.floaterio.rule.database.dao.{TweetStatusDao, UserStatusDao, UserDao}
  */
 
 class FilterDependencies(
-  // TODO remove
-  val twitter: Twitter,
-  val updateTwitter: Twitter,
-  val tweetQueue: TweetQueue,
-  val tweetCache: TweetCache,
-  val jobScheduler: JobScheduler,
-  val userDao: UserDao,
-  val userStatusDao: UserStatusDao,
-  val tweetStatusDao: TweetStatusDao,
-  val config: RuleConfiguration ){
+//  // TODO remove
+//  val twitter: Twitter,
+//  // TODO remove
+//  val updateTwitter: Twitter,
+//  val tweetQueue: TweetQueue,
+//  val tweetCache: TweetCache,
+//  val userDao: UserDao,
+//  val userStatusDao: UserStatusDao,
+//  val tweetStatusDao: TweetStatusDao,
+//  val config: RuleConfiguration
+                          ){
 }

@@ -1,9 +1,6 @@
 package net.floaterio.rule.filter
 
 import impl._
-import net.floaterio.rule.twitter.TwitterComponentFactory
-import net.floaterio.rule.database.DaoFactory
-import net.floaterio.rule.core.{RuleConfiguration, MiscFactory}
 
 /**
  * Created with IntelliJ IDEA.
@@ -15,41 +12,33 @@ import net.floaterio.rule.core.{RuleConfiguration, MiscFactory}
 
 trait FilterManager {
 
-  def filterMap: Map[String, Filter]
+  def filterMap: Map[String, TimelineFilter]
 
   def getInfo(name: String): Option[FilterStatus]
 
 }
 
-class FilterManagerImpl(configuration: RuleConfiguration,miscFactory: MiscFactory,
-                        twitterComponentFactory: TwitterComponentFactory, daoFactory: DaoFactory) {
-
-  import miscFactory._
-  import twitterComponentFactory._
-  import daoFactory._
-
-  lazy val dependencies = new FilterDependencies(
-    twitter,updateTwitter,tweetQueue,tweetCache,
-    jobScheduler,userDao,userStatusDao,tweetStatusDao, configuration
-  )
+class FilterManagerImpl {
 
   // TODO start
   lazy val filterMap = {
     List (
-      new ConversationFilter(dependencies),
-      new ScheduledFilter(dependencies),
-      new FollowCheckFilter(dependencies),
-      new GreetingFilter(dependencies),
-      new CommandFilter(dependencies)
+      new ConversationFilter(),
+      new ScheduledFilter(),
+      new FollowCheckFilter(),
+      new GreetingFilter(),
+      new CommandFilter()
     ).map { f =>
       f.filterName -> f
     }.toMap
   }
 
   def getInfo(name: String) = {
-    filterMap.get(name).map { f =>
-      FilterStatus(f.filterName, f.isResume)
-    }
+//    filterMap.get(name).map { f =>
+//      FilterStatus(f.filterName, f.isResume)
+//    }
+    // TODO
+    Nil
   }
 
 

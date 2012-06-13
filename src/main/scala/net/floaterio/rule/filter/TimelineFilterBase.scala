@@ -8,9 +8,11 @@ import net.floaterio.rule.util.{UserSupplier, ReplyCondition}
 import java.util.Date
 import scala.util.Random
 import net.floaterio.rule.database.model.{TweetStatus, User}
-import net.floaterio.rule.core.RuleConfiguration
 import org.apache.commons.lang.StringUtils
-import net.floaterio.rule.database.dao.{UserStatusDao, UserDao}
+import javax.management.remote.rmi._RMIConnectionImpl_Tie
+import org.apache.commons.logging.LogFactory
+import net.floaterio.rule.database.dao.{TweetStatusDao, UserStatusDao, UserDao}
+import net.floaterio.rule.core.{DependencyFactory, RuleConfiguration}
 
 /**
  * Created by IntelliJ IDEA.
@@ -21,75 +23,51 @@ import net.floaterio.rule.database.dao.{UserStatusDao, UserDao}
  */
 
 
-class FilterBase (dependencies: FilterDependencies) extends Filter {
+class TimelineFilterBase extends TimelineFilter {
+
+  val log = LogFactory.getLog(getClass)
+
+  val twitter = DependencyFactory.twitter.vend
+  val tweetQueue = DependencyFactory.tweetQueue.vend
+  val tweetCache = DependencyFactory.tweetCache.vend
+  val userDao = DependencyFactory.userDao.vend
+  val userStatusDao = DependencyFactory.userStatusDao.vend
+  val tweetStatusDao = DependencyFactory.tweetStatusDao.vend
+  val config = DependencyFactory.ruleConfig.vend
 
   def filterName = getClass.getName
-  val eventReceiver = new EventReceiver
+  def mention: List[(StatusContext) => Option[_]] = Nil
+  def timeline: List[(StatusContext) => Option[_]] = Nil
+  def followState: List[(FollowContext) => Option[_]] = Nil
+  def schedule: List[(JobSchedule, (StatusContext) => Option[_])] = Nil
 
-  import eventReceiver._
-  import dependencies._
-
-  def resume = eventReceiver.resume
-  def pause = eventReceiver.pause
-  def isResume = eventReceiver.status
-
-  def timeLine(filters: (StatusContext => Option[_])*) {
-    filters.foreach {filter =>
-      onTimeLineListeners += (t => {
-        filter(StatusContext(t.status))
-      })
-    }
-  }
-
-  def mention(filters: (StatusContext => Option[_])*) {
-    filters.foreach {filter =>
-      onMentionListeners += (t => {
-        filter(StatusContext(t.status))
-      })
-    }
-  }
-
-  def interval(name: String, span: Int, timeUnit: TimeUnit)(filter:StatusContext => Option[_]) {
-    scheduleReceiverMap += (name -> (() => {
-      filter.apply(new NullStatusContext())
-    }))
-    jobScheduler.addIntervalJob(name, filterName, eventReceiver, span, timeUnit)
-  }
-
-  def atJustTime(name: String, cron: String)(filter:StatusContext => Option[_]) {
-    scheduleReceiverMap += (name -> (() => {
-      filter.apply(new NullStatusContext())
-    }))
-    jobScheduler.addCronJob(name, filterName, eventReceiver, cron)
-  }
-
-  val tweet: StatusContext => TweetStatus = {
+  val tweet: StatusContext => Unit = {
     context => {
       tweetQueue.tweet(context.updateStatus)
     }
   }
 
-  val reply: StatusContext => TweetStatus = {
+  val reply: StatusContext => Unit = {
     context => {
       tweetQueue.reply(toReplyStatus(context.updateStatus, context.screenName), context.statusId, context.userId)
     }
   }
 
-  def onFollow(filter: FollowContext => Unit) {
-    onFollowListeners += (
-      follow => {
-        filter.apply(FollowContext(follow.user, true))
-      }
-    )
-  }
-
-  def onRemove(filter: FollowContext => Unit) {
-    onRemoveListeners += (
-      follow => {
-        filter.apply(FollowContext(follow.user, false))
-      }
-    )
-  }
+//  def onFollow(filter: FollowContext => Unit) {
+//    onFollowListeners += (
+//      follow => {
+//        filter.apply(FollowContext(follow.user, true))
+//      }
+//    )
+//  }
+//
+//  def onRemove(filter: FollowContext => Unit) {
+//    onRemoveListeners += (
+//      follow => {
+//        filter.apply(FollowContext(follow.user, false))
+//      }
+//    )
+//  }
 
   // Helper Method
 
@@ -137,6 +115,12 @@ class FilterBase (dependencies: FilterDependencies) extends Filter {
       } else {
         None
       }
+    }
+  }
+
+  def pass[T]: T => Option[T] = {
+    s => {
+      Some(s)
     }
   }
 
@@ -203,14 +187,14 @@ class FilterBase (dependencies: FilterDependencies) extends Filter {
 
   def fix(function: StatusContext => StatusContext, weight: Double) = FuncWithWeight(function, weight)
   implicit def normal(function: StatusContext => StatusContext) = FuncWithWeight(function, 1.0)
-  implicit def strToFunc(text: String): StatusContext => StatusContext = {
+  implicit def simpleStatus(text: String): StatusContext => StatusContext = {
     ctx => {
       ctx.updateStatus = text
       ctx
     }
   }
 
-  implicit def strToFuncWithWeight(text: String): FuncWithWeight = normal(strToFunc(text))
+  implicit def strToFuncWithWeight(text: String): FuncWithWeight = normal(simpleStatus(text))
 
   implicit def daoToUserSupplier(dao: UserDao): UserSupplier = {
     new UserSupplier {

@@ -1,7 +1,8 @@
 package net.floaterio.rule.filter.impl
 
 import net.floaterio.rule.database.model.User
-import net.floaterio.rule.filter.{FilterDependencies, FilterBase}
+import net.floaterio.rule.filter.{FilterDependencies, TimelineFilterBase}
+import net.floaterio.rule.twitter.model.FollowContext
 
 /**
  * Created by IntelliJ IDEA.
@@ -11,38 +12,42 @@ import net.floaterio.rule.filter.{FilterDependencies, FilterBase}
  * To change this template use File | Settings | File Templates.
  */
 
-class FollowCheckFilter (dependencies: FilterDependencies) extends FilterBase(dependencies) {
+class FollowCheckFilter extends TimelineFilterBase {
 
-  import dependencies._
+  // TODO StatusContextとFollowContextを共通のTraitを継承するようにしてtweetとの関数合成をできるようにする
 
-  onFollow(context => {
-    val user = new User()
-    user.id = context.user.getId
-    user.screenName = context.user.getScreenName
-    user.nickname = context.user.getName
-    // TODO リプライ許可を引き継ぐ
-    userDao.createOrUpdate(user)
+  override def followState = List(
+    (c:FollowContext) => {
+      if(c.isFollow) {
+        val user = new User()
+        user.id = c.user.getId
+        user.screenName = c.user.getScreenName
+        user.nickname = c.user.getName
+        // TODO リプライ許可を引き継ぐ
+        userDao.createOrUpdate(user)
 
-    // TODO Async
-    safeWithTwitter {
-      updateTwitter.createFriendship(context.user.getId)
-    }
-  })
+        // TODO Async
+        safeWithTwitter {
+          twitter.createFriendship(c.user.getId)
+        }
 
-  onRemove(context => {
+      } else {
+        userDao.findByPk(c.user.getId).foreach(user => {
+          user.followed = false
+          user.following = false
+          user.allowReply = false
+          userDao.update(user)
 
-    userDao.findByPk(context.user.getId).foreach(user => {
-      user.followed = false
-      user.following = false
-      user.allowReply = false
-      userDao.update(user)
+          // TODO Async
+          safeWithTwitter {
+            twitter.destroyFriendship(user.id)
+          }
 
-      // TODO Async
-      safeWithTwitter {
-        updateTwitter.destroyFriendship(user.id)
+        })
       }
-
-    })
+    }
+  ).map(f => {
+    pass[FollowContext] >> f
   })
 }
 

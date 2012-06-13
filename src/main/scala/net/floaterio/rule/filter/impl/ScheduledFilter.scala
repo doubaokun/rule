@@ -3,7 +3,7 @@ package net.floaterio.rule.filter.impl
 import java.util.concurrent.TimeUnit
 import net.floaterio.rule.util.ReplySupport
 import net.floaterio.rule.twitter.model.StatusContext
-import net.floaterio.rule.filter.{FilterDependencies, FilterBase}
+import net.floaterio.rule.filter._
 
 /**
  * Created by IntelliJ IDEA.
@@ -13,10 +13,9 @@ import net.floaterio.rule.filter.{FilterDependencies, FilterBase}
  * To change this template use File | Settings | File Templates.
  */
 
-class ScheduledFilter (dependencies: FilterDependencies) extends FilterBase(dependencies) {
+class ScheduledFilter  extends TimelineFilterBase {
 
   import ReplySupport._
-  import dependencies._
 
 //  val converter = random(
 //    "だめ、またない",
@@ -42,17 +41,15 @@ class ScheduledFilter (dependencies: FilterDependencies) extends FilterBase(depe
 //    time("そろそろ寝ようかな", 1.0, 2, 3)
 //  )
 
-//  atJustTime("sanjihan", "0 30 3,15 * * ?") {
-//    tweet("ｻﾝｼﾞﾊﾝ!!")
-//  }
-
-//  atJustTime("yoruho", "0 0 0 * * ?") {
-//    tweet("よるほー")
-//  }
-
-//  interval("schdule1", 30, TimeUnit.MINUTES) {
-//    tweet(converter.apply(new StatusContext(null, Nil, null)))
-//  }
+  override def schedule = List(
+    (CronJob("sanjihan", "0 30 3,15 * * ?"), simpleStatus("ｻﾝｼﾞﾊﾝ!!")),
+    (CronJob("yoruho", "0 0 0 * * ?"), simpleStatus("よるほー")),
+    (IntervalJob("schdule1", 30, TimeUnit.MINUTES),
+      rand("ずるい！わたしもするー！",
+           "でも女の子に触られて赤くなるのは可愛いから４ptアップ"))
+  ).map(sc => {
+    (sc._1, pass >> sc._2 >> tweet)
+  })
 
 }
 

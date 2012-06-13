@@ -5,6 +5,7 @@ import java.util.Date
 import net.floaterio.rule.database.dao.TweetStatusDao
 import twitter4j.{Status, TwitterException, StatusUpdate, Twitter}
 import net.floaterio.rule.database.model.{StatusType, TweetType, TweetStatus}
+import net.floaterio.rule.core.DependencyFactory
 
 
 /**
@@ -40,7 +41,10 @@ case class TweetCommand(tweetStatus: TweetStatus) extends Delayed {
   }
 }
 
-class TweetQueueImpl(twitter: Twitter, tweetStatusDao: TweetStatusDao) extends TweetQueue {
+class TweetQueueImpl extends TweetQueue {
+
+  val twitter = DependencyFactory.twitter.vend
+  val tweetStatusDao = DependencyFactory.tweetStatusDao.vend
 
   val queue = new DelayQueue[TweetCommand]()
   val executor = Executors.newSingleThreadExecutor()

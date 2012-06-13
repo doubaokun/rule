@@ -14,9 +14,9 @@ import scala.collection.JavaConversions._
 import java.util.concurrent.TimeUnit
 import org.apache.commons.logging.LogFactory
 import twitter4j._
-import net.floaterio.rule.core.RuleConfiguration
 import net.floaterio.rule.core.command._
 import net.floaterio.rule.util.schedule.JobScheduler
+import net.floaterio.rule.core.{DependencyFactory, RuleConfiguration}
 
 
 trait TweetCollector {
@@ -30,11 +30,13 @@ trait TweetCollector {
 
 }
 
-class TweetCollectorImpl (twitter: Twitter,
-                     twitterStream: TwitterStream,
-                     tweetCache : TweetCache,
-                     config : RuleConfiguration,
-                     jobScheduler : JobScheduler ) extends TweetCollector {
+class TweetCollectorImpl extends TweetCollector {
+
+  val twitter = DependencyFactory.twitter.vend
+  val twitterStream = DependencyFactory.twitterStream.vend
+  val tweetCache = DependencyFactory.tweetCache.vend
+  val config = DependencyFactory.ruleConfig.vend
+  val jobScheduler = DependencyFactory.jobScheduler.vend
 
   val timelinePaging = new Paging(1, 1)
   val timelineCount = 100

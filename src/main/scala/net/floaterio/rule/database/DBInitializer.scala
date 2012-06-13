@@ -30,6 +30,7 @@ class DBInitializer extends Schema {
     logger.info("session created")
   }
 
+  // TODO TWitterのIDと同一にするためにはAuto Incrementを無効にしなければならない
   val userTable = table[User]("user")
   on(userTable)(u =>
     declare(u.id is (primaryKey)))

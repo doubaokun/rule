@@ -13,10 +13,10 @@ import net.floaterio.rule.util.schedule.{JobSchedulerImpl, JobScheduler}
 
 trait MiscFactory {
 
-  def jobScheduler : JobScheduler
+//  def jobScheduler : JobScheduler
 
 }
 
 class MiscFactoryImpl extends MiscFactory {
-  lazy val jobScheduler = new JobSchedulerImpl
+//  lazy val jobScheduler = new JobSchedulerImpl
 }

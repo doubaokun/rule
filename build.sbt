@@ -20,4 +20,5 @@ libraryDependencies ++= Seq("commons-logging" % "commons-logging" % "1.1.1",
                            "org.msgpack" % "msgpack-scala_2.9.1" % "0.6.4",
                            "com.twitter" % "util-eval" % "1.12.13" withSources(),
                            "org.twitter4j" % "twitter4j-core" % "2.2.5",
-                           "org.twitter4j" % "twitter4j-stream" % "2.2.5")
+                           "org.twitter4j" % "twitter4j-stream" % "2.2.5",
+                           "net.liftweb" % "lift-util_2.9.1" % "2.4")

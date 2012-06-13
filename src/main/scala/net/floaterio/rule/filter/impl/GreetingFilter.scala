@@ -10,14 +10,12 @@ package net.floaterio.rule.filter.impl
 
 import org.apache.commons.logging.LogFactory
 import net.floaterio.rule.util._
-import net.floaterio.rule.filter.{FilterDependencies, FilterBase}
+import net.floaterio.rule.filter.{FilterDependencies, TimelineFilterBase}
+import net.floaterio.rule.twitter.model.StatusContext
 
-class GreetingFilter (dependencies: FilterDependencies) extends FilterBase(dependencies) {
-
-  val log = LogFactory.getLog(getClass)
+class GreetingFilter extends TimelineFilterBase {
 
   import ReplySupport._
-  import dependencies._
 
 //  val combiners = List(or("おはよう", r("(お|起)き(た|る)")).convert(
 //    random(
@@ -37,19 +35,12 @@ class GreetingFilter (dependencies: FilterDependencies) extends FilterBase(depen
 //    )
 //  )
 
-
-  timeLine(
-    permitted >>> filter("aaaa") >> rand("aaaaaa", "bbbbbb") >> tweet
-  )
-
-
-
-  timeLine(
-    permitted >>>
+  override def timeline = List(
+    filter("aaaa") >> rand("aaaaaa", "bbbbbb"),
     filter(and(or("帰宅", "きたく", "ただいま"), not("行きたく"))) >>
-    rand("おかえり。{user}", "おかえりなさいー") >> complement >>
-    tweet
-  )
-
+      rand("おかえり。{user}", "おかえりなさいー") >> complement
+  ).map {f =>
+    permitted >>> f >> tweet
+  }
 
 }
