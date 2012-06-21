@@ -6,6 +6,7 @@ import net.floaterio.rule.database.DBInitializer
 import net.floaterio.rule.util.schedule.{JobSchedulerImpl, JobScheduler}
 import twitter4j.{TwitterStream, Twitter, TwitterStreamFactory, TwitterFactory}
 import net.floaterio.rule.twitter._
+import net.floaterio.rule.database.model._
 
 /**
  * Created with IntelliJ IDEA.

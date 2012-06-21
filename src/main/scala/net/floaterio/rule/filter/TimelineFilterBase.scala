@@ -2,17 +2,14 @@ package net.floaterio.rule.filter
 
 import twitter4j._
 import net.floaterio.rule.twitter._
-import java.util.concurrent.TimeUnit
 import model.{FollowContext, StatusContext}
-import net.floaterio.rule.util.{UserSupplier, ReplyCondition}
 import java.util.Date
 import scala.util.Random
-import net.floaterio.rule.database.model.{TweetStatus, User}
 import org.apache.commons.lang.StringUtils
-import javax.management.remote.rmi._RMIConnectionImpl_Tie
 import org.apache.commons.logging.LogFactory
-import net.floaterio.rule.database.dao.{TweetStatusDao, UserStatusDao, UserDao}
 import net.floaterio.rule.core.{DependencyFactory, RuleConfiguration}
+import net.floaterio.rule.database.model._
+import net.floaterio.rule.util.{OptionalFunctionCombiner, UserSupplier, ReplyCondition}
 
 /**
  * Created by IntelliJ IDEA.
@@ -53,22 +50,6 @@ class TimelineFilterBase extends TimelineFilter {
     }
   }
 
-//  def onFollow(filter: FollowContext => Unit) {
-//    onFollowListeners += (
-//      follow => {
-//        filter.apply(FollowContext(follow.user, true))
-//      }
-//    )
-//  }
-//
-//  def onRemove(filter: FollowContext => Unit) {
-//    onRemoveListeners += (
-//      follow => {
-//        filter.apply(FollowContext(follow.user, false))
-//      }
-//    )
-//  }
-
   // Helper Method
 
   val permitted : StatusContext => Option[StatusContext] = {
@@ -103,9 +84,7 @@ class TimelineFilterBase extends TimelineFilter {
     "@" + screenName + " " + status
   }
 
-  implicit def toCombiner[A, B](f1: A => Option[B]): Combiner[A, B] = {
-    new Combiner[A, B](f1)
-  }
+
 
   // TODO move to reply support
   def filter(condition: ReplyCondition):StatusContext => Option[StatusContext] = {
@@ -142,7 +121,7 @@ class TimelineFilterBase extends TimelineFilter {
   }
 
   val userSupplier = new UserSupplier {
-    def getUser(userId: Long): Option[User] = userDao.findByPk(userId)
+    def getUser(userId: Long): Option[TUser] = userDao.findByPk(userId)
   }
 
   // 30分間のうちの頻度
@@ -198,7 +177,7 @@ class TimelineFilterBase extends TimelineFilter {
 
   implicit def daoToUserSupplier(dao: UserDao): UserSupplier = {
     new UserSupplier {
-      def getUser(userId: Long): Option[User] = dao.findByPk(userId)
+      def getUser(userId: Long): Option[TUser] = dao.findByPk(userId)
     }
   }
 
@@ -211,25 +190,10 @@ class TimelineFilterBase extends TimelineFilter {
   implicit def decorateContextWithUserStatus(c: StatusContext): ContextDecoratorWithUserStatus
     = ContextDecoratorWithUserStatus(c, userStatusDao)
 
-}
-
-class Combiner[A, B](f1: A => Option[B]) {
-
-  def >>>[C](f2: B => Option[C]): A => Option[C] = {
-    f1 andThen { op =>
-      op.map { b =>
-        f2.apply(b)
-      }.getOrElse(None)
-    }
+  implicit def toCombiner[A, B](f1: A => Option[B]): OptionalFunctionCombiner[A, B] = {
+    new OptionalFunctionCombiner[A, B](f1)
   }
 
-  def >>[C](f2: B => C): A => Option[C] = {
-    f1 andThen { op =>
-      op.map { b =>
-        f2.apply(b)
-      }
-    }
-  }
 }
 
 case class FuncWithWeight(f: StatusContext => StatusContext, weight: Double) {

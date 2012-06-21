@@ -2,9 +2,8 @@ package net.floaterio.rule.twitter
 
 import java.util.concurrent._
 import java.util.Date
-import net.floaterio.rule.database.dao.TweetStatusDao
-import twitter4j.{Status, TwitterException, StatusUpdate, Twitter}
-import net.floaterio.rule.database.model.{StatusType, TweetType, TweetStatus}
+import twitter4j.{Status, TwitterException, StatusUpdate}
+import net.floaterio.rule.database.model._
 import net.floaterio.rule.core.DependencyFactory
 
 
@@ -56,7 +55,7 @@ class TweetQueueImpl extends TweetQueue {
 
   def tweet(status: String, delay: Int):TweetStatus = {
     val ts = TweetStatus.createTweet(status, delay)
-    val saved = tweetStatusDao.create(ts)
+    val saved = tweetStatusDao.insert(ts)
     queue.add(TweetCommand(saved))
     saved
   }
@@ -67,7 +66,7 @@ class TweetQueueImpl extends TweetQueue {
 
   def reply(status: String, inReplyToStatusId: Long, inReplyToUserId: Long, delay: Int):TweetStatus = {
     val ts = TweetStatus.createReply(status, inReplyToStatusId, inReplyToUserId, delay)
-    val saved = tweetStatusDao.create(ts)
+    val saved = tweetStatusDao.insert(ts)
     queue.add(TweetCommand(saved))
     saved
   }

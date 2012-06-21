@@ -1,7 +1,8 @@
 package net.floaterio.rule.database.model
 
-import org.squeryl.KeyedEntity
 import java.util.Date
+import net.floaterio.rule.database.base.{DaoBase, BaseEntity}
+import org.squeryl.{Table, KeyedEntity}
 
 /**
  * Created by IntelliJ IDEA.
@@ -11,14 +12,20 @@ import java.util.Date
  * To change this template use File | Settings | File Templates.
  */
 
-class User(var id: Long,
+class TUser(var id: Long,
             var screenName: String,
             var nickname: String,
             var following: Boolean,
             var followed: Boolean,
             var allowReply: Boolean,
-            var created: Date) extends KeyedEntity[Long]{
+            var created: Date) extends BaseEntity {
 
   def this() = this(0L,"","",true,false,true,new Date)
 
+}
+
+trait UserDao extends DaoBase[TUser] {
+}
+
+class UserDaoImpl(val table: Table[TUser]) extends UserDao {
 }

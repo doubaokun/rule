@@ -22,4 +22,12 @@ class RuleConfiguration {
 
   val startUpTime = new Date
 
+  val dbDriver = "com.mysql.jdbc.Driver"
+
+  val dbUrl = "jdbc:mysql://localhost:3306/rule"
+
+  val dbUser = "root"
+
+  val dbPass = "pass01"
+
 }

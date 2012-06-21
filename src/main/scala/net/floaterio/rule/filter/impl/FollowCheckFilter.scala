@@ -1,6 +1,6 @@
 package net.floaterio.rule.filter.impl
 
-import net.floaterio.rule.database.model.User
+import net.floaterio.rule.database.model.TUser
 import net.floaterio.rule.filter.{FilterDependencies, TimelineFilterBase}
 import net.floaterio.rule.twitter.model.FollowContext
 
@@ -19,12 +19,12 @@ class FollowCheckFilter extends TimelineFilterBase {
   override def followState = List(
     (c:FollowContext) => {
       if(c.isFollow) {
-        val user = new User()
+        val user = new TUser()
         user.id = c.user.getId
         user.screenName = c.user.getScreenName
         user.nickname = c.user.getName
         // TODO リプライ許可を引き継ぐ
-        userDao.createOrUpdate(user)
+        userDao.insertOrUpdate(user)
 
         // TODO Async
         safeWithTwitter {

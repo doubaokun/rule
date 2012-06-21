@@ -4,6 +4,7 @@ import model._
 import org.squeryl.adapters.MySQLInnoDBAdapter
 import org.squeryl.{SessionFactory, Session, Schema}
 import org.squeryl.PrimitiveTypeMode._
+import net.floaterio.rule.core.DependencyFactory
 
 /**
  * Created by IntelliJ IDEA.
@@ -19,19 +20,21 @@ class DBInitializer extends Schema {
 
   val logger = LoggerFactory.getLogger(getClass)
 
+  val config = DependencyFactory.ruleConfig.vend
+
   def init = {
-    Class.forName("com.mysql.jdbc.Driver")
+    Class.forName(config.dbDriver)
     logger.info("mysql driver loaded")
     // TODO Config
     SessionFactory.concreteFactory = Some(() => Session.create(
-      java.sql.DriverManager.getConnection("jdbc:mysql://localhost:3306/rule", "root", "pass01")
+      java.sql.DriverManager.getConnection(config.dbUrl, config.dbUser, config.dbPass)
       , new MySQLInnoDBAdapter)
     )
     logger.info("session created")
   }
 
   // TODO TWitterのIDと同一にするためにはAuto Incrementを無効にしなければならない
-  val userTable = table[User]("user")
+  val userTable = table[TUser]("user")
   on(userTable)(u =>
     declare(u.id is (primaryKey)))
 

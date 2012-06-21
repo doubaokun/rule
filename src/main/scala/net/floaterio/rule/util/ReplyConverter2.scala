@@ -3,7 +3,7 @@ package net.floaterio.rule.util
 import net.floaterio.rule.twitter.model.StatusContext
 import java.util.Calendar
 import util.Random
-import net.floaterio.rule.database.model.User
+import net.floaterio.rule.database.model.TUser
 
 /**
  * Created with IntelliJ IDEA.
@@ -18,7 +18,7 @@ trait ReplyConverter2 {
 }
 
 trait UserSupplier {
-  def getUser(userId: Long): Option[User]
+  def getUser(userId: Long): Option[TUser]
 }
 
 //trait ReplyConverter {
