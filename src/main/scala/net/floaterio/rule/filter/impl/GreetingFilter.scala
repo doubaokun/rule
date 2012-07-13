@@ -10,8 +10,7 @@ package net.floaterio.rule.filter.impl
 
 import org.apache.commons.logging.LogFactory
 import net.floaterio.rule.util._
-import net.floaterio.rule.filter.{FilterDependencies, TimelineFilterBase}
-import net.floaterio.rule.twitter.model.StatusContext
+import net.floaterio.rule.filter.TimelineFilterBase
 
 class GreetingFilter extends TimelineFilterBase {
 

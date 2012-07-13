@@ -2,7 +2,7 @@ package net.floaterio.rule.filter.impl
 
 import org.apache.commons.logging.LogFactory
 import net.floaterio.rule.util._
-import net.floaterio.rule.filter.{FilterDependencies, TimelineFilterBase}
+import net.floaterio.rule.filter.TimelineFilterBase
 
 /**
  * Created by IntelliJ IDEA.
@@ -41,10 +41,10 @@ class ConversationFilter extends TimelineFilterBase {
       rand("aaaa", "BBBBB"),
     filter("message3") >>> withFrequency >> {
       s => {
-        s.updateStatus = s.likability match {
+        s.setStatus (s.likability match {
           case i if i > 0 => "Good message"
           case _ => "Bad message"
-        }
+        })
         s
       }
     }

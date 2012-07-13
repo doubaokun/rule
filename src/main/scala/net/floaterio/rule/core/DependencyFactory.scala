@@ -41,5 +41,4 @@ object DependencyFactory extends SimpleInjector {
   val tweetCollector = _inject[TweetCollector](new TweetCollectorImpl())
   val tweetQueue = _inject[TweetQueue](new TweetQueueImpl())
 
-
 }

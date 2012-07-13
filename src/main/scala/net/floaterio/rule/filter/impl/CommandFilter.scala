@@ -1,7 +1,6 @@
 package net.floaterio.rule.filter.impl
 
-import net.floaterio.rule.twitter.model.StatusContext
-import net.floaterio.rule.filter.{FilterDependencies, TimelineFilterBase}
+import net.floaterio.rule.filter.TimelineFilterBase
 import net.floaterio.rule.twitter.TweetResult
 
 

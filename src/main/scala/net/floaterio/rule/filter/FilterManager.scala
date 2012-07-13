@@ -1,6 +1,7 @@
 package net.floaterio.rule.filter
 
 import impl._
+import net.floaterio.rule.twitter.model.StatusContext
 
 /**
  * Created with IntelliJ IDEA.
@@ -39,6 +40,14 @@ class FilterManagerImpl {
 //    }
     // TODO
     Nil
+  }
+
+  def onTimeline(statusContext: StatusContext) = {
+    filterMap.values.map(f => {
+      f.timeline.find(func => {
+        func.apply(statusContext).isDefined
+      })
+    })
   }
 
 

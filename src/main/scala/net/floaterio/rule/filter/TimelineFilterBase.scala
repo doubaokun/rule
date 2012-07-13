@@ -2,7 +2,7 @@ package net.floaterio.rule.filter
 
 import twitter4j._
 import net.floaterio.rule.twitter._
-import model.{FollowContext, StatusContext}
+import model.{Context, FollowContext, StatusContext}
 import java.util.Date
 import scala.util.Random
 import org.apache.commons.lang.StringUtils
@@ -33,26 +33,35 @@ class TimelineFilterBase extends TimelineFilter {
   val config = DependencyFactory.ruleConfig.vend
 
   def filterName = getClass.getName
+
   def mention: List[(StatusContext) => Option[_]] = Nil
+
   def timeline: List[(StatusContext) => Option[_]] = Nil
+
   def followState: List[(FollowContext) => Option[_]] = Nil
+
   def schedule: List[(JobSchedule, (StatusContext) => Option[_])] = Nil
 
-  val tweet: StatusContext => Unit = {
+  val tweet: Context[_] => Unit = {
     context => {
-      tweetQueue.tweet(context.updateStatus)
+      context.updateStatus.map(s => {
+        tweetQueue.tweet(s.getStatus)
+      })
     }
   }
 
   val reply: StatusContext => Unit = {
     context => {
-      tweetQueue.reply(toReplyStatus(context.updateStatus, context.screenName), context.statusId, context.userId)
+      context.updateStatus.map(s => {
+        // 引数をStatusUpdateに変更する
+        tweetQueue.reply(toReplyStatus(s.getStatus, context.screenName), context.statusId, context.userId)
+      })
     }
   }
 
   // Helper Method
 
-  val permitted : StatusContext => Option[StatusContext] = {
+  val permitted: StatusContext => Option[StatusContext] = {
     context => {
       if (!context.status.getText.contains("@")) {
         Some(context)
@@ -63,8 +72,8 @@ class TimelineFilterBase extends TimelineFilter {
   }
 
   val owner: StatusContext => Option[StatusContext] = {
-    context : StatusContext => {
-      if(context.isOwnerTweet){
+    context: StatusContext => {
+      if (context.isOwnerTweet) {
         Some(context)
       } else {
         None
@@ -76,7 +85,7 @@ class TimelineFilterBase extends TimelineFilter {
     try {
       f
     } catch {
-      case e:TwitterException => log.error("twitter error", e)
+      case e: TwitterException => log.error("twitter error", e)
     }
   }
 
@@ -85,12 +94,21 @@ class TimelineFilterBase extends TimelineFilter {
   }
 
 
-
   // TODO move to reply support
-  def filter(condition: ReplyCondition):StatusContext => Option[StatusContext] = {
+  def filter(condition: ReplyCondition): StatusContext => Option[StatusContext] = {
     s => {
       if (condition(s)) {
         Some(s)
+      } else {
+        None
+      }
+    }
+  }
+
+  def filter[T](f: T => Boolean) : T => Option[T] = {
+    t => {
+      if (f(t)) {
+        Some(t)
       } else {
         None
       }
@@ -109,13 +127,23 @@ class TimelineFilterBase extends TimelineFilter {
    */
   def complement: StatusContext => StatusContext = {
     c => {
-      val sts = c.updateStatus
-      c.updateStatus = try {
-        val userName = userDao.getUser(c.userId).map(_.nickname).getOrElse(c.userName)
-        StringUtils.replace(sts, "{user}", userName)
+      val updated = try {
+        c.updateStatus.map(s => {
+          // TODO Cache User
+          val userName = userDao.getUser(c.userId).map(_.nickname).getOrElse(c.userName)
+          val replaced = StringUtils.replace(s.getStatus, "{user}", userName)
+          val result = new StatusUpdate(replaced)
+          result.setInReplyToStatusId(s.getInReplyToStatusId)
+          // TODO copy other property
+          result
+        })
       } catch {
-        case e:Exception => sts
+        case e: Exception => {
+          log.error("error in convert status %s".format(c.updateStatus.map(_.getStatus)), e)
+          None
+        }
       }
+      c.updateStatus = updated
       c
     }
   }
@@ -152,7 +180,7 @@ class TimelineFilterBase extends TimelineFilter {
     }
   }
 
-  def increment(point: Int):StatusContext => Unit = {
+  def increment(point: Int): StatusContext => Unit = {
     c => {
       userStatusDao.incrementLikability(c.userId, point)
     }
@@ -165,10 +193,12 @@ class TimelineFilterBase extends TimelineFilter {
   }
 
   def fix(function: StatusContext => StatusContext, weight: Double) = FuncWithWeight(function, weight)
+
   implicit def normal(function: StatusContext => StatusContext) = FuncWithWeight(function, 1.0)
+
   implicit def simpleStatus(text: String): StatusContext => StatusContext = {
     ctx => {
-      ctx.updateStatus = text
+      ctx.setStatus(text)
       ctx
     }
   }
@@ -182,13 +212,13 @@ class TimelineFilterBase extends TimelineFilter {
   }
 
   implicit def decorateContextWithConfig(c: StatusContext): ContextDecoratorWithConfig
-    = ContextDecoratorWithConfig(c, config)
+  = ContextDecoratorWithConfig(c, config)
 
   implicit def decorateContextWithConversationList(c: StatusContext): ContextDecoratorWithConversationList
-    = ContextDecoratorWithConversationList(c, config, tweetCache)
+  = ContextDecoratorWithConversationList(c, config, tweetCache)
 
   implicit def decorateContextWithUserStatus(c: StatusContext): ContextDecoratorWithUserStatus
-    = ContextDecoratorWithUserStatus(c, userStatusDao)
+  = ContextDecoratorWithUserStatus(c, userStatusDao)
 
   implicit def toCombiner[A, B](f1: A => Option[B]): OptionalFunctionCombiner[A, B] = {
     new OptionalFunctionCombiner[A, B](f1)
@@ -199,21 +229,24 @@ class TimelineFilterBase extends TimelineFilter {
 case class FuncWithWeight(f: StatusContext => StatusContext, weight: Double) {
 
   def withAction(action: StatusContext => Unit): FuncWithWeight = {
-    FuncWithWeight( s => {
+    FuncWithWeight(s => {
       s.afterAction += action
       f(s)
-    } , weight)
+    }, weight)
   }
 }
 
 case class ContextDecoratorWithConfig(c: StatusContext, config: RuleConfiguration) {
   def isOwnerTweet = c.screenName == config.ownerScreenName
+
   def isRuleTweet = c.screenName == config.botScreenName
 }
 
 case class ContextDecoratorWithConversationList(c: StatusContext, config: RuleConfiguration, cache: TweetCache) {
   lazy val conversationList = cache.getConversationList(c.status)
+
   def triggerUser = conversationList.head.getUser
+
   def isRuleTrigger = triggerUser.getScreenName == config.botScreenName
 }
 
@@ -222,6 +255,7 @@ case class ContextDecoratorWithUserStatus(c: StatusContext, userStatusDao: UserS
 }
 
 class NullStatusContext extends StatusContext(null)
+
 
 
 
